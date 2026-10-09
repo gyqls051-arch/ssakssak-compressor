@@ -1,4 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+let autoUpdater = null;
+try { ({ autoUpdater } = require('electron-updater')); } catch { /* dev env without dep */ }
 const path = require('node:path');
 const fs = require('node:fs');
 const { TranscodeJob, listPresets, detectEncoders } = require('./transcode');
@@ -41,6 +43,12 @@ app.whenReady().then(async () => {
   ffprobeBin = resolveBinary('ffprobe.exe');
   if (ffmpegBin) encoder = await detectEncoders(ffmpegBin);
   createWindow();
+
+  if (app.isPackaged && autoUpdater) {
+    autoUpdater.autoDownload = true;
+    autoUpdater.on('error', (err) => console.warn('[updater]', err && err.message));
+    void autoUpdater.checkForUpdatesAndNotify();
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

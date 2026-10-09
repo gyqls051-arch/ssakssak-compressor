@@ -41,9 +41,17 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "artifactName": "SsakSsak-Compressor-Setup.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "gyqls051-arch",
+      "repo": "ssakssak-compressor"
     }
   },
   "allowScripts": {
     "electron@33.4.11": true
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }

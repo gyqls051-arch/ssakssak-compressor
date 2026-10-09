@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'">
+<title>싹싹김치 비디오 압축기</title>
+<style>
+  :root{--bg:#faf7f1;--card:#fff;--line:#e8e2d8;--ink:#2b2620;--muted:#8a8177;--accent:#e85d2c;--accent2:#f6863c;--green:#2f8f4e}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Pretendard','Malgun Gothic',system-ui,sans-serif;background:var(--bg);color:var(--ink);padding:24px}
+  h1{font-size:22px;display:flex;align-items:center;gap:8px}
+  .sub{font-size:12.5px;color:var(--muted);margin:4px 0 20px}
+  .drop{border:2px dashed var(--line);border-radius:16px;background:var(--card);padding:34px;text-align:center;cursor:pointer;transition:.15s}
+  .drop.over,.drop:hover{border-color:var(--accent);background:#fff8f3}
+  .drop b{display:block;font-size:15px}
+  .drop span{font-size:12px;color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:12px}
+  .fname{font-weight:700;font-size:13.5px;word-break:break-all}
+  .fmeta{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .frow{display:flex;align-items:center;gap:12px}
+  .frow .grow{flex:1;min-width:0}
+  .bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:8px}
+  .bar i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .2s}
+  select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);font:inherit;font-size:13.5px;margin:14px 0}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:12px;padding:11px 20px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:disabled{background:var(--line);color:var(--muted);cursor:default}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+  .row{display:flex;gap:10px;align-items:center;margin-top:4px}
+  .st{font-size:12px;color:var(--muted)}
+  .st.done{color:var(--green);font-weight:700}
+  .st.err{color:#c0392b}
+  .badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:#f0ebe2;color:var(--muted)}
+  .badge.ok{background:#e2f2e7;color:var(--green)}
+  .badge.err{background:#f9e2e0;color:#c0392b}
+</style>
+</head>
+<body>
+  <h1>🥬 싹싹김치 비디오 압축기</h1>
+  <p class="sub">파일이 컴퓨터 밖으로 나가지 않아요 — 100% 로컬 처리 · 무료</p>
+
+  <div class="drop" id="drop" role="button" tabindex="0">
+    <b>동영상 파일을 놓거나 클릭해서 선택</b>
+    <span>mp4 · mkv · mov · avi · webm — 여러 개 가능</span>
+  </div>
+
+  <select id="preset"></select>
+
+  <div class="row">
+    <button class="btn btn-primary" id="go" disabled>압축 시작</button>
+    <button class="btn btn-ghost" id="cancelBtn" disabled>취소</button>
+    <span class="st" id="encInfo"></span>
+  </div>
+
+  <div id="list"></div>
+
+<script>
+const $=(s)=>document.querySelector(s);
+const drop=$('#drop'),presetSel=$('#preset'),go=$('#go'),cancelBtn=$('#cancelBtn'),list=$('#list'),encInfo=$('#encInfo');
+let queue=[],running=false;
+
+const fmtMB=n=>n>=1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
+const fmtDur=s=>{s=Math.round(s);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
+
+async function init(){
+  const {presets,encoder,ready}=await ssak.presets();
+  if(!ready){encInfo.textContent='⚠ ffmpeg/ffprobe가 없습니다 — resources/bin을 확인하세요';encInfo.className='st err';return;}
+  for(const p of presets){
+    const o=document.createElement('option');
+    o.value=p.key;o.textContent=p.label+' — '+p.description;
+    presetSel.appendChild(o);
+  }
+  encInfo.textContent='인코더: '+encoder;
+  updateGo();
+}
+function updateGo(){go.disabled=!queue.length||running;cancelBtn.disabled=!running;}
+
+function addFiles(paths){
+  for(const p of paths){
+    if(queue.some(q=>q.path===p))continue;
+    queue.push({path:p,state:'대기',info:null});
+    renderItem(queue[queue.length-1]);
+  }
+  updateGo();
+  // 비동기 프로브 — 파일별로
+  for(const q of queue){ if(!q.info&&!q.probing){q.probing=true;ssak.probe(q.path).then(i=>{q.info=i;renderItem(q);}).catch(()=>{q.info={error:true};renderItem(q);});} }
+}
+
+function renderItem(q){
+  let el=document.getElementById('q-'+CSS.escape(btoa(unescape(encodeURIComponent(q.path))).slice(0,16)));
+  if(!el){
+    el=document.createElement('div');el.className='card';
+    el.id='q-'+CSS.escape(btoa(unescape(encodeURIComponent(q.path))).slice(0,16));
+    el.innerHTML=`<div class="frow"><div class="grow"><div class="fname"></div><div class="fmeta"></div><div class="bar"><i></i></div></div><span class="badge"></span></div>`;
+    list.appendChild(el);
+  }
+  el.querySelector('.fname').textContent=q.path.split(/[\\/]/).pop();
+  const meta=q.info?(q.info.error?'읽기 실패':`${fmtMB(q.info.size)} · ${fmtDur(q.info.duration)} · ${(q.info.bitrate/1000).toFixed(0)} kbps`):'분석 중…';
+  el.querySelector('.fmeta').textContent=(q.outMsg?meta+' → '+q.outMsg:meta);
+  el.querySelector('.bar i').style.width=(q.pct||0)+'%';
+  const b=el.querySelector('.badge');
+  b.textContent=q.state;b.className='badge'+(q.state==='완료'?' ok':q.state==='실패'||q.state==='취소'?' err':'');
+  if(q.state==='완료'&&q.output){b.style.cursor='pointer';b.title='폴더에서 보기';b.onclick=()=>ssak.reveal(q.output);}
+}
+
+drop.addEventListener('click',async()=>{addFiles(await ssak.selectFiles());});
+['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{
+  const fs=[...e.dataTransfer.files].map(f=>{try{return ssak.pathForFile(f);}catch{return null;}}).filter(Boolean);
+  addFiles(fs);
+});
+
+let curQ=null;
+ssak.onProgress(p=>{if(curQ){curQ.pct=Math.round(p.ratio*100);renderItem(curQ);}});
+
+go.addEventListener('click',async()=>{
+  running=true;updateGo();
+  for(const q of queue){
+    if(q.state==='완료')continue;
+    curQ=q;q.state='진행';renderItem(q);
+    try{
+      const r=await ssak.transcode({input:q.path,presetKey:presetSel.value});
+      q.state='완료';q.pct=100;q.output=r.output;q.outMsg=fmtMB(r.outSize)+' 저장됨';
+    }catch(e){
+      q.state=String(e.message||e).includes('취소')?'취소':'실패';
+      q.outMsg=String(e.message||e).split('\n')[0];
+    }
+    renderItem(q);
+    if(q.state==='취소')break;
+  }
+  curQ=null;running=false;updateGo();
+});
+cancelBtn.addEventListener('click',()=>ssak.cancel());
+init();
+</script>
+</body>
+</html>

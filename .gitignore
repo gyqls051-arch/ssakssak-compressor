@@ -1,0 +1,6 @@
+node_modules/
+release/
+dist/
+*.log
+# 바이너리는 git에 올리지 않음 — scripts/fetch-ffmpeg.ps1 로 받을 것
+resources/bin/*.exe

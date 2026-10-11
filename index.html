@@ -33,6 +33,20 @@
   .badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:#f0ebe2;color:var(--muted)}
   .badge.ok{background:#e2f2e7;color:var(--green)}
   .badge.err{background:#f9e2e0;color:#c0392b}
+  /* 하단 자매제품 띠배너 */
+  .adbar{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;margin-top:22px;padding:12px 16px;border-radius:14px;cursor:pointer;
+         background:linear-gradient(108deg,#1b2230,#28324c 58%,#3a4470);transition:filter .12s}
+  .adbar:hover{filter:brightness(1.08)}
+  .adtag{position:absolute;top:6px;right:8px;font-size:8px;font-weight:800;letter-spacing:.1em;
+         color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.22);border-radius:3px;padding:0 4px}
+  .ad-o{flex:none;width:36px;height:36px;border-radius:9px;background:linear-gradient(150deg,#ff8a4c,#ff5a2e);
+        display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:900;
+        box-shadow:0 3px 10px rgba(255,90,46,.4)}
+  .ad-txt{flex:1;min-width:0}
+  .ad-t1{font-size:12.5px;font-weight:800;color:#fff;letter-spacing:.03em}
+  .ad-t2{font-size:11.5px;color:#cdd3e2;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ad-cta{flex:none;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(150deg,#ff8a4c,#ff5a2e);
+          border-radius:99px;padding:7px 14px}
 </style>
 </head>
 <body>
@@ -53,6 +67,16 @@
   </div>
 
   <div id="list"></div>
+
+  <div class="adbar" id="adbar" role="link" tabindex="0" title="자매 제품 — 프리미어 컷편집 가속기">
+    <span class="adtag">AD</span>
+    <div class="ad-o">O</div>
+    <div class="ad-txt">
+      <div class="ad-t1">OFFCUT STUDIO</div>
+      <div class="ad-t2">긴 영상, 컷만 쏙쏙 뽑는 프리미어 편집 가속기</div>
+    </div>
+    <span class="ad-cta">보러가기</span>
+  </div>
 
 <script>
 const $=(s)=>document.querySelector(s);
@@ -132,6 +156,7 @@ go.addEventListener('click',async()=>{
   curQ=null;running=false;updateGo();
 });
 cancelBtn.addEventListener('click',()=>ssak.cancel());
+$('#adbar').addEventListener('click',()=>ssak.openExternal('https://www.offcut.dev/?utm_source=ssakssak_compressor&utm_medium=app_banner'));
 init();
 </script>
 </body>

@@ -121,3 +121,11 @@ ipcMain.handle('cancel', () => { job?.cancel(); });
 ipcMain.handle('reveal', (_e, p) => {
   if (typeof p === 'string' && fs.existsSync(p)) shell.showItemInFolder(p);
 });
+
+const ALLOWED_EXTERNAL = new Set(['offcut.dev', 'www.offcut.dev', 'ssakkimchi.com', 'www.ssakkimchi.com']);
+ipcMain.handle('open-external', (_e, url) => {
+  try {
+    const u = new URL(String(url));
+    if (u.protocol === 'https:' && ALLOWED_EXTERNAL.has(u.hostname)) shell.openExternal(u.href);
+  } catch { /* ignore malformed */ }
+});

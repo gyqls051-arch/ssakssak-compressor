@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('ssak', {
   transcode: (args) => ipcRenderer.invoke('transcode', args),
   cancel: () => ipcRenderer.invoke('cancel'),
   reveal: (p) => ipcRenderer.invoke('reveal', p),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
   onProgress: (fn) => {
     const h = (_e, p) => fn(p);
     ipcRenderer.on('progress', h);

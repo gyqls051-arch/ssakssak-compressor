@@ -40,5 +40,5 @@ BtbN `ffmpeg-master-latest-win64-lgpl.zip`에서 bin 폴더를 복사하세요.
 
 ## 라이선스
 
-- 소스 코드: MIT — [LICENSE](LICENSE)
+- 소스 코드: 싹싹김치 프리웨어 라이선스(무료 사용 가능, 유료 재판매·변조 배포·사칭 금지) — [LICENSE](LICENSE)
 - 번들 서드파티: [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)

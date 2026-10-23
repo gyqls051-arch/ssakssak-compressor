@@ -44,11 +44,7 @@ app.whenReady().then(async () => {
   if (ffmpegBin) encoder = await detectEncoders(ffmpegBin);
   createWindow();
 
-  if (app.isPackaged && autoUpdater) {
-    autoUpdater.autoDownload = true;
-    autoUpdater.on('error', (err) => console.warn('[updater]', err && err.message));
-    void autoUpdater.checkForUpdatesAndNotify();
-  }
+  void require('./update-policy').startUpdates({ app, updater: autoUpdater, repo: 'ssakssak-compressor' });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

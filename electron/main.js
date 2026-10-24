@@ -22,6 +22,9 @@ let encoder = null;
 
 function createWindow() {
   win = new BrowserWindow({
+    icon: app.isPackaged
+      ? path.join(process.resourcesPath, 'brand', 'app.ico')
+      : path.join(__dirname, '..', 'resources', 'brand', 'app.ico'),
     width: 760,
     height: 640,
     minWidth: 640,

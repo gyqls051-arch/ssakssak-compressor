@@ -28,6 +28,15 @@
       {
         "from": "resources/bin",
         "to": "bin"
+      },
+      {
+        "from": "resources/brand",
+        "to": "brand",
+        "filter": [
+          "app.ico",
+          "app.png",
+          "LUCIDE-LICENSE.txt"
+        ]
       }
     ],
     "extraFiles": [
@@ -35,12 +44,17 @@
       "THIRD_PARTY_LICENSES.md"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "resources/brand/app.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "SsakSsak-Compressor-Setup.${ext}"
+      "artifactName": "SsakSsak-Compressor-Setup.${ext}",
+      "installerIcon": "resources/brand/app.ico",
+      "uninstallerIcon": "resources/brand/app.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     },
     "publish": {
       "provider": "github",

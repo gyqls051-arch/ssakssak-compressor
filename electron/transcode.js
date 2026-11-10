@@ -1,4 +1,5 @@
 const { spawn } = require('node:child_process');
+const fs = require('node:fs');
 
 // ---------- helpers ----------
 
@@ -221,6 +222,7 @@ class TranscodeJob {
     this.presetKey = presetKey;
     this.input = input;
     this.output = output;
+    this._outputExistedBefore = Boolean(output && fs.existsSync(output));
     this._duration = duration;
     this._inputBitrate = inputBitrate;
     // encoders: 시도할 인코더 후보 배열 (실패 시 다음으로 재시도). encoder 단독 인자도 허용.
@@ -256,20 +258,23 @@ class TranscodeJob {
         }
       });
 
-      this.proc.on('error', (e) => {
+      this.proc.on('error', async (e) => {
         this.proc = null;
+        await this._cleanupPartialOutput();
         reject(Object.assign(e, { earlyDeath: true }));
       });
 
-      this.proc.on('close', (code) => {
+      this.proc.on('close', async (code) => {
         const wasCancelled = this.cancelled;
         this.proc = null;
         if (wasCancelled) {
+          await this._cleanupPartialOutput();
           reject(new Error('사용자에 의해 취소됨'));
         } else if (code === 0) {
           this.usedEncoder = enc;
           resolve();
         } else {
+          await this._cleanupPartialOutput();
           // 시작 3초 내 사망 = 인코더 미동작 가능성 → 다음 후보로 넘어갈 수 있게 표시
           const tail = this.stderrTail.slice(-8).join('\n');
           const err = new Error(`ffmpeg exited ${code}\n${tail}`);
@@ -278,6 +283,24 @@ class TranscodeJob {
         }
       });
     });
+  }
+
+  async _cleanupPartialOutput() {
+    if (!this.output || this._outputExistedBefore) return;
+    try {
+      await fs.promises.unlink(this.output);
+    } catch (err) {
+      if (err && err.code !== 'ENOENT') {
+        await new Promise((r) => setTimeout(r, 150));
+        try {
+          await fs.promises.unlink(this.output);
+        } catch (retryErr) {
+          if (retryErr && retryErr.code !== 'ENOENT') {
+            console.warn('[transcode] partial output unlink failed:', retryErr.message);
+          }
+        }
+      }
+    }
   }
 
   async run() {
@@ -292,6 +315,7 @@ class TranscodeJob {
         if (this.cancelled || !e.earlyDeath) break;
       }
     }
+    await this._cleanupPartialOutput();
     throw lastErr || new Error('사용자에 의해 취소됨');
   }
 
@@ -302,8 +326,11 @@ class TranscodeJob {
       setTimeout(() => {
         if (this.proc) {
           try { this.proc.kill('SIGKILL'); } catch { /* already dead */ }
+          setTimeout(() => { void this._cleanupPartialOutput(); }, 100);
         }
       }, 2000);
+    } else {
+      void this._cleanupPartialOutput();
     }
   }
 }

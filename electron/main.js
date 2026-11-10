@@ -3,6 +3,7 @@ let autoUpdater = null;
 try { ({ autoUpdater } = require('electron-updater')); } catch { /* dev env without dep */ }
 const path = require('node:path');
 const fs = require('node:fs');
+const { pathToFileURL } = require('node:url');
 const { TranscodeJob, listPresets, detectEncoders } = require('./transcode');
 const { runFfprobe } = require('./ffprobe');
 
@@ -38,7 +39,23 @@ function createWindow() {
       sandbox: true,
     },
   });
-  win.loadFile(path.join(__dirname, '..', 'index.html'));
+  const indexPath = path.join(__dirname, '..', 'index.html');
+  const allowedAppUrl = pathToFileURL(indexPath).href;
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    try {
+      const u = new URL(String(url));
+      if (u.protocol === 'https:' && ALLOWED_EXTERNAL.has(u.hostname)) {
+        shell.openExternal(u.href);
+      }
+    } catch { /* ignore malformed */ }
+    return { action: 'deny' };
+  });
+  win.webContents.on('will-navigate', (event, url) => {
+    if (url !== allowedAppUrl && !url.startsWith(`${allowedAppUrl}#`)) {
+      event.preventDefault();
+    }
+  });
+  win.loadFile(indexPath);
 }
 
 app.whenReady().then(async () => {

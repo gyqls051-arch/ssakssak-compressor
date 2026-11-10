@@ -6,7 +6,7 @@ $bin = Join-Path $root 'resources\bin'
 New-Item -ItemType Directory -Force -Path $bin | Out-Null
 
 $zip = Join-Path $env:TEMP 'ffmpeg-lgpl.zip'
-$url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-lgpl.zip'
+$url = 'https://github.com/FFmpeg-Builds/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-lgpl.zip'
 Write-Host 'Downloading FFmpeg LGPL build...' -ForegroundColor Cyan
 Invoke-WebRequest -Uri $url -OutFile $zip
 
